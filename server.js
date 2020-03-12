@@ -2,11 +2,13 @@ const express = require("express");
 const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io").listen(server);
+const os = require("os");
 const port = 8000;
 
 app.get("/", function (req, res) {
     res.sendFile(__dirname + "/index.html");
 })
+
 
 var client = 0;
 var clientlost = 0;
@@ -21,9 +23,16 @@ var ipnextconnect = 0;
 
 io.on("connection", function (socket) {
     socket.emit("newconnection", { description: `Chào mừng bạn` });
-    if (iphost === 0) {
-        iphost = socket.handshake.address;
-    }
+
+    var ifaces = os.networkInterfaces()
+
+    Object.keys(ifaces).forEach(ifname => {
+        ifaces[ifname].forEach(ifaces => {
+            if (ifaces.family === "IPv6" && ifaces.internal === true) {
+                iphost = ifaces.address;
+            }
+        })
+    })
 
     ipnewconnect = socket.handshake.address;
 
@@ -45,14 +54,9 @@ io.on("connection", function (socket) {
         socket.broadcast.emit("newconnection", { description: `${client} người dùng đã kết nối đến.` });
         console.log("==========================================");
         console.log(`${client} người dùng đã kết nối đến.`);
-        // console.log(`Kết nối mới: ${ipnewconnect}`);
         console.log(`Kết nối mới: ${ipconvert}`);
         iparray.push(ipnextconnect);
         console.log("==========================================");
-        // console.log("Kết nối hiện có:");
-        // iparray.forEach(item => {
-        //     console.log(item);
-        // })
         ipconvertarray.push(ipconvert);
         console.log("Kết nối hiện có:");
         ipconvertarray.forEach(item => {
@@ -82,9 +86,6 @@ io.on("connection", function (socket) {
             console.log(`Kết nối mất: ${ipconvert}`);
             console.log("==========================================");
             console.log("Kết nối hiện có:");
-            // iparray.forEach(item => {
-            //     console.log(item);
-            // })
             ipconvertarray.forEach(item => {
                 console.log(item);
             })
